@@ -1,7 +1,10 @@
 import os
 import numpy as np
 import argparse
+import datetime
 from tqdm import tqdm
+
+from tensorboardX import SummaryWriter
 
 import torch
 import torch.nn as nn
@@ -22,7 +25,7 @@ parser.add_argument('--device', type=int, default=0)
 parser.add_argument('--load_workers', type=int, default=16)
 parser.add_argument('--path', type=str, default='./data/')
 parser.add_argument('--save', type=str, default='./results/checkpoint/')
-parser.add_argument('--log', type=str, default='./results/log/')
+# parser.add_argument('--log', type=str, default='./results/log/')
 parser.add_argument('--img_size', type=int, default=80)
 parser.add_argument('--lr', type=float, default=1e-4)
 parser.add_argument('--beta1', type=float, default=0.9)
@@ -140,6 +143,10 @@ def test(epoch):
     return acc_all/float(counter)
 
 def main():
+    start_time = datetime.datetime.now().strftime('%Y-%m-%d_%I-%M-%S-%p')
+    logs = 'results/log/{}-{}'.format(args.model, start_time)
+    writer = SummaryWriter(logs)
+
     for epoch in range(0, args.epochs):
         train_loss, train_acc = train(epoch)
         val_loss, val_acc = validate(epoch)
@@ -148,8 +155,10 @@ def main():
         model.save_model(args.save, epoch)
         loss = {'train':train_loss, 'val':val_loss}
         acc = {'train':train_acc, 'val':val_acc, 'test':test_acc}
-        log.write_scalars('Loss', loss, epoch)
-        log.write_scalars('Accuracy', acc, epoch)
+        writer.add_scalar('Loss', loss, epoch)
+        writer.add_scalar('Accuracy', acc, epoch)
+        # log.write_scalars('Loss', loss, epoch)
+        # log.write_scalars('Accuracy', acc, epoch)
 
 if __name__ == '__main__':
     main()
